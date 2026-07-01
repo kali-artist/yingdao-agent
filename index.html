@@ -9,9 +9,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
   <!-- Live2D Cubism 4 Core -->
   <script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
-  <!-- PIXI.js 6.x (required by pixi-live2d-display) -->
+  <!-- PIXI.js 6.x -->
   <script src="https://cdn.jsdelivr.net/npm/pixi.js@6.5.10/dist/browser/pixi.min.js"></script>
-  <!-- pixi-live2d-display (cubism4 build, registers PIXI.live2d global) -->
+  <!-- pixi-live2d-display (cubism4 build) -->
   <script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display/dist/cubism4.min.js"></script>
 </head>
 <body>
@@ -27,7 +27,7 @@
         <p>数字人加载中...</p>
       </div>
     </div>
-
+    
     <!-- 聊天面板 -->
     <div id="chat-panel" class="glass">
       <div id="chat-header">
@@ -50,11 +50,20 @@
         </div>
       </div>
 
+      <!-- 文件预览区 -->
+      <div id="file-preview-area"></div>
+
       <div id="chat-input-area">
         <div id="typing-indicator" style="display:none">
           <span></span><span></span><span></span>
         </div>
         <div class="input-wrapper">
+          <!-- 文件上传按钮 -->
+          <button id="file-btn" title="发送文件" disabled>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
           <input type="text" id="chat-input" placeholder="输入消息..." autocomplete="off" disabled>
           <button id="send-btn" disabled>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -62,29 +71,7 @@
             </svg>
           </button>
         </div>
-      </div>
-    </div>
-
-    <!-- 设置弹窗 -->
-    <div id="settings-modal" class="modal" style="display:none">
-      <div class="modal-content glass">
-        <h2>设置</h2>
-        <div class="setting-item">
-          <label>API地址</label>
-          <input type="text" id="api-url-input" placeholder="https://...">
-        </div>
-        <div class="setting-item">
-          <label>API Key</label>
-          <input type="password" id="api-key-input" placeholder="可选">
-        </div>
-        <div class="setting-item">
-          <label>系统提示词</label>
-          <textarea id="system-prompt-input" rows="3" placeholder="你是一个友好的AI助手..."></textarea>
-        </div>
-        <div class="modal-actions">
-          <button id="settings-save">保存</button>
-          <button id="settings-close">取消</button>
-        </div>
+        <input type="file" id="file-input" multiple hidden>
       </div>
     </div>
   </div>
