@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const handleSend = () => {
     const text = input.value.trim();
     if (text && !ChatController.isStreaming) {
-      ChatController.send(text);
+      ChatController.sendMessage(text);
     }
   };
 
