@@ -364,6 +364,8 @@ const ChatController = {
     document.getElementById('chat-messages').innerHTML = '';
     UIController.addMessage('assistant', this.messages[0].content);
     UIController.renderFilePreview();
+    UIController.msgCount = 0;
+    UIController.updateCounter();
   }
 };
 
@@ -379,11 +381,21 @@ const UIController = {
     this.statusDot = document.getElementById('status-dot');
     this.statusText = document.getElementById('status-text');
     this.typingIndicator = document.getElementById('typing-indicator');
+    this.msgCounter = document.getElementById('msg-counter');
+    this.msgCount = 0;
   },
 
   addMessage(role, text, attachments) {
     const msgEl = document.createElement('div');
     msgEl.className = `message ${role}`;
+
+    // AI头像
+    if (role === 'assistant') {
+      const avatar = document.createElement('div');
+      avatar.className = 'message-avatar';
+      avatar.textContent = 'AI';
+      msgEl.appendChild(avatar);
+    }
 
     const contentEl = document.createElement('div');
     contentEl.className = 'message-content';
@@ -396,6 +408,13 @@ const UIController = {
     }
 
     this.messagesEl.appendChild(msgEl);
+    
+    // 更新对话计数
+    if (role === 'user') {
+      this.msgCount++;
+      this.updateCounter();
+    }
+    
     this.scrollToBottom();
     return msgEl;
   },
@@ -498,6 +517,12 @@ const UIController = {
 
   scrollToBottom() {
     this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+  },
+
+  updateCounter() {
+    if (this.msgCounter) {
+      this.msgCounter.textContent = this.msgCount + ' 条对话';
+    }
   },
 
   setStatus(status) {
