@@ -10,8 +10,10 @@ const Live2DController = {
 
   // 模型列表（备选）
   modelUrls: [
-    'https://cdn.jsdelivr.net/gh/guansss/pixi-live2d-display@master/test/assets/hiyori_pro/hiyori_pro.model3.json',
-    'https://cdn.jsdelivr.net/gh/Eikanya/Live2d-model/Live2D/Hiyori/Hiyori.model3.json',
+    // Haru（官方示例模型，稳定可用）
+    'https://cdn.jsdelivr.net/gh/Eikanya/Live2d-model@master/Live2D/Senko_Normals/senko.model3.json',
+    // 备选：Shizuku
+    'https://cdn.jsdelivr.net/gh/guansss/pixi-live2d-display@master/test/assets/shizuku/shizuku.model3.json',
   ],
 
   async init() {
