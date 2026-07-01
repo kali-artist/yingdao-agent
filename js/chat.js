@@ -189,12 +189,17 @@ const ChatController = {
     }
   },
 
-  // 处理SSE流
+  // 处理SSE流 - 影刀双层JSON格式
   async handleStream(body, contentEl) {
     const reader = body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
     let fullText = '';
+    
+    // 按partID追踪part类型（reasoning/text/step-start等）
+    const partTypes = {};
+    // 标记是否已经有text part开始（用来跳过reasoning）
+    let firstTextStarted = false;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -202,65 +207,92 @@ const ChatController = {
 
       buffer += decoder.decode(value, { stream: true });
 
-      // 尝试按行处理（SSE格式）
-      const lines = buffer.split('\n');
-      buffer = lines.pop();
+      // SSE事件以双换行分隔
+      const events = buffer.split('\n\n');
+      buffer = events.pop(); // 保留不完整的部分
 
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
+      for (const eventStr of events) {
+        if (!eventStr.trim()) continue;
 
-        // SSE: data: xxx
-        if (trimmed.startsWith('data: ')) {
-          const data = trimmed.slice(6);
-          if (data === '[DONE]') continue;
+        // 解析SSE事件
+        let dataStr = '';
+        for (const line of eventStr.split('\n')) {
+          if (line.startsWith('data:')) {
+            dataStr += line.slice(5).trim();
+          }
+        }
+        if (!dataStr) continue;
 
-          fullText += this.extractContent(data) + '\n';
-        } else if (trimmed.startsWith('event:')) {
-          continue; // 跳过event行
-        } else {
-          // 非SSE格式，直接当文本
-          fullText += this.extractContent(trimmed);
+        // 第一层JSON：外层SSE data
+        let outer;
+        try {
+          outer = JSON.parse(dataStr);
+        } catch { continue; }
+
+        // 第二层JSON：outer.data 是JSON字符串
+        let inner;
+        try {
+          inner = JSON.parse(outer.data || '{}');
+        } catch { continue; }
+
+        const innerType = inner.type || '';
+        const props = inner.properties || {};
+
+        // 记录part类型（message.part.updated 会在delta之前标记类型）
+        if (innerType === 'message.part.updated') {
+          const part = props.part || {};
+          if (part.id && part.type) {
+            partTypes[part.id] = part.type;
+          }
+          // 如果是text类型的part最终更新，用完整文本做权威校正
+          if (part.type === 'text' && part.text) {
+            fullText = part.text;
+            contentEl.innerHTML = this.formatText(fullText);
+            UIController.scrollToBottom();
+          }
         }
 
-        contentEl.innerHTML = this.formatText(fullText);
-        UIController.scrollToBottom();
+        // 流式delta - 只提取text类型part的文本
+        if (innerType === 'message.part.delta' && props.field === 'text' && props.delta) {
+          const partId = props.partID;
+          const partType = partTypes[partId];
+
+          // 跳过reasoning part的delta
+          if (partType === 'reasoning') continue;
+
+          // 未知类型或text类型 → 追加显示
+          fullText += props.delta;
+          contentEl.innerHTML = this.formatText(fullText);
+          UIController.scrollToBottom();
+        }
       }
     }
 
-    // 处理buffer中剩余数据
+    // 处理buffer中剩余的完整事件
     if (buffer.trim()) {
-      fullText += this.extractContent(buffer.trim());
-      contentEl.innerHTML = this.formatText(fullText);
-      UIController.scrollToBottom();
+      let dataStr = '';
+      for (const line of buffer.split('\n')) {
+        if (line.startsWith('data:')) {
+          dataStr += line.slice(5).trim();
+        }
+      }
+      if (dataStr) {
+        try {
+          const outer = JSON.parse(dataStr);
+          const inner = JSON.parse(outer.data || '{}');
+          if (inner.type === 'message.part.updated') {
+            const part = (inner.properties || {}).part || {};
+            if (part.type === 'text' && part.text) {
+              fullText = part.text;
+              contentEl.innerHTML = this.formatText(fullText);
+              UIController.scrollToBottom();
+            }
+          }
+        } catch {}
+      }
     }
 
     return fullText.trim();
-  },
-
-  // 从SSE data中提取文本内容
-  extractContent(data) {
-    // 尝试JSON解析
-    try {
-      const parsed = JSON.parse(data);
-      // 兼容多种格式
-      if (parsed.content) return parsed.content;
-      if (parsed.text) return parsed.text;
-      if (parsed.delta) return parsed.delta;
-      if (parsed.data?.content) return parsed.data.content;
-      if (parsed.data?.text) return parsed.data.text;
-      if (parsed.message) return parsed.message;
-      // 影刀可能用的格式
-      if (parsed.answer) return parsed.answer;
-      if (parsed.reply) return parsed.reply;
-      if (parsed.output) return parsed.output;
-      // chunk格式
-      if (parsed.choices?.[0]?.delta?.content) return parsed.choices[0].delta.content;
-      return '';
-    } catch (e) {
-      // 非JSON，直接返回文本
-      return data;
-    }
   },
 
   // 解析回复（提取文本和文件链接）
