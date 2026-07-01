@@ -24,7 +24,7 @@ const ChatController = {
   init() {
     this.messages = [{
       role: 'assistant',
-      content: '你好！我是你的AI数字人助手，有什么可以帮你的吗？😊'
+      content: '你好！我是需需，你的AI数字人助手，有什么可以帮你的吗？😊'
     }];
   },
 
@@ -357,7 +357,7 @@ const ChatController = {
   clear() {
     this.messages = [{
       role: 'assistant',
-      content: '你好！我是你的AI数字人助手，有什么可以帮你的吗？😊'
+      content: '你好！我是需需，你的AI数字人助手，有什么可以帮你的吗？😊'
     }];
     this.conversationUuid = null;
     this.pendingFiles = [];
