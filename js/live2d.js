@@ -8,11 +8,16 @@ const Live2DController = {
   speakTimer: null,
   blinkTimer: null,
 
-  // 模型列表（备选）
+  // 模型列表（多CDN备选，jsdelivr国内可能不稳定）
   modelUrls: [
-    // Haru（官方示例模型，稳定可用）
+    // Senko - jsdelivr Fastly
+    'https://fastly.jsdelivr.net/gh/Eikanya/Live2d-model@master/Live2D/Senko_Normals/senko.model3.json',
+    // Senko - jsdelivr gcore
+    'https://gcore.jsdelivr.net/gh/Eikanya/Live2d-model@master/Live2D/Senko_Normals/senko.model3.json',
+    // Senko - jsdelivr 默认
     'https://cdn.jsdelivr.net/gh/Eikanya/Live2d-model@master/Live2D/Senko_Normals/senko.model3.json',
-    // 备选：Shizuku
+    // Shizuku - 官方示例（更小更稳定）
+    'https://fastly.jsdelivr.net/gh/guansss/pixi-live2d-display@master/test/assets/shizuku/shizuku.model3.json',
     'https://cdn.jsdelivr.net/gh/guansss/pixi-live2d-display@master/test/assets/shizuku/shizuku.model3.json',
   ],
 
@@ -46,11 +51,14 @@ const Live2DController = {
     for (const url of this.modelUrls) {
       try {
         console.log('尝试加载模型:', url);
-        this.model = await PIXI.live2d.Live2DModel.from(url, {
-          autoInteract: true,
-        });
+        // 8秒超时，防止CDN卡住
+        const model = await Promise.race([
+          PIXI.live2d.Live2DModel.from(url, { autoInteract: true }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
+        ]);
         
-        if (!this.model) continue;
+        if (!model) continue;
+        this.model = model;
         
         this.app.stage.addChild(this.model);
         this.isLoaded = true;
@@ -68,7 +76,7 @@ const Live2DController = {
         console.log('Live2D模型加载成功');
         return;
       } catch (e) {
-        console.warn('模型加载失败:', url, e);
+        console.warn('模型加载失败:', url, e.message || e);
       }
     }
     

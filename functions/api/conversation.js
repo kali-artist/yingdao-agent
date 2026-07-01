@@ -1,12 +1,13 @@
 // 影刀智能体 - 创建会话
 // POST /api/conversation  body: { title?: string }
-export async function onRequestPost({ request, env }) {
+export async function onRequest({ request, env }) {
   const cors = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   };
   if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
+  if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers: cors });
 
   try {
     const token = env.YINGDAO_TOKEN;

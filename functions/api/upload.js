@@ -2,23 +2,21 @@
 // POST /api/upload
 // Body: FormData with 'file' field
 // Response: { success, data: { url, filename, ... } }
-export async function onRequestPost({ request, env }) {
-  const corsHeaders = {
+export async function onRequest({ request, env }) {
+  const cors = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   };
-
-  if (request.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
+  if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers: cors });
 
   try {
     const token = env.YINGDAO_TOKEN;
     if (!token) {
       return new Response(JSON.stringify({ error: 'YINGDAO_TOKEN not configured' }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        headers: { 'Content-Type': 'application/json', ...cors },
       });
     }
 
@@ -29,7 +27,7 @@ export async function onRequestPost({ request, env }) {
     if (!file) {
       return new Response(JSON.stringify({ error: 'No file provided' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        headers: { 'Content-Type': 'application/json', ...cors },
       });
     }
 
@@ -52,13 +50,13 @@ export async function onRequestPost({ request, env }) {
 
     return new Response(JSON.stringify(data), {
       status: apiResponse.status,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      headers: { 'Content-Type': 'application/json', ...cors },
     });
 
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      headers: { 'Content-Type': 'application/json', ...cors },
     });
   }
 }

@@ -1,6 +1,6 @@
 // 文件下载代理 - 解决影刀返回文件URL的跨域问题
 // GET /api/proxy?url=xxx
-export async function onRequestGet({ request, env }) {
+export async function onRequest({ request, env }) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -9,6 +9,9 @@ export async function onRequestGet({ request, env }) {
 
   if (request.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+  if (request.method !== 'GET') {
+    return new Response('Method Not Allowed', { status: 405, headers: corsHeaders });
   }
 
   try {

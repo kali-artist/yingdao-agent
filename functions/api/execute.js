@@ -2,7 +2,7 @@
 // POST /api/execute
 // Body: { conversationUuid, content, attachments: [{url, filename}] }
 // Response: SSE stream from 影刀 API (transparently forwarded)
-export async function onRequestPost({ request, env }) {
+export async function onRequest({ request, env }) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -11,6 +11,9 @@ export async function onRequestPost({ request, env }) {
 
   if (request.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+  if (request.method !== 'POST') {
+    return new Response('Method Not Allowed', { status: 405, headers: corsHeaders });
   }
 
   try {
