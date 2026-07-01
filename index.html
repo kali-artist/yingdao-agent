@@ -13,6 +13,9 @@
   <script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display/dist/cubism4.min.js"></script>
 </head>
 <body>
+  <!-- 赛博网格背景 -->
+  <div class="grid-bg"></div>
+
   <!-- 多层背景 -->
   <div class="bg-layer">
     <img src="assets/bg-atmospheric.png" alt="" class="bg-image">
@@ -22,14 +25,29 @@
   <canvas id="bg-canvas"></canvas>
   <div class="noise-overlay"></div>
 
+  <!-- CRT扫描线纹理 -->
+  <div class="crt-lines"></div>
+
+  <!-- 移动扫描线 -->
+  <div class="scanline"></div>
+
+  <!-- 鼠标光晕 -->
+  <div class="cursor-glow" id="cursor-glow"></div>
+
   <div id="app">
     <!-- 左侧角色展示区 -->
     <div id="stage">
+      <!-- HUD角标 -->
+      <div class="hud-corner tl"></div>
+      <div class="hud-corner tr"></div>
+      <div class="hud-corner bl"></div>
+      <div class="hud-corner br"></div>
+
       <!-- 顶部状态栏 -->
       <div class="stage-topbar">
         <div class="brand">
           <div class="brand-mark"></div>
-          <span class="brand-name">需需 · AI</span>
+          <span class="brand-name" data-text="需需 · AI">需需 · AI</span>
         </div>
         <div class="stage-status">
           <span class="pill pill-live"><span class="pill-dot"></span>SYSTEM ONLINE</span>
@@ -38,6 +56,10 @@
 
       <!-- 竖排装饰文字 -->
       <div class="vert-text">DIGITAL HUMAN · INTERACTIVE ASSISTANT</div>
+
+      <!-- 数据流装饰 -->
+      <div class="data-stream data-stream-1"></div>
+      <div class="data-stream data-stream-2"></div>
 
       <!-- Live2D 画布 -->
       <div id="live2d-wrapper">
@@ -65,6 +87,7 @@
         <div class="header-left">
           <div class="header-avatar">
             <div class="header-avatar-inner">AI</div>
+            <div class="avatar-pulse"></div>
             <div class="avatar-pulse"></div>
           </div>
           <div class="header-info">
