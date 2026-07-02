@@ -106,6 +106,23 @@ body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 /* === App Layout === */
 #app{display:flex;height:100vh;position:relative;z-index:5}
 
+/* === 可拖拽分隔条 === */
+#panel-splitter{
+  width:6px;flex-shrink:0;cursor:col-resize;position:relative;z-index:10;
+  background:transparent;transition:background .2s;
+}
+#panel-splitter:hover,#panel-splitter.dragging{
+  background:rgba(168,85,247,0.15);
+}
+.splitter-handle{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:2px;height:48px;border-radius:2px;
+  background:rgba(168,85,247,0.2);transition:background .2s,height .2s;
+}
+#panel-splitter:hover .splitter-handle,#panel-splitter.dragging .splitter-handle{
+  background:rgba(168,85,247,0.5);height:64px;
+}
+
 /* === Stage (左侧角色区) === */
 #stage{
   flex:1;position:relative;display:flex;align-items:center;justify-content:center;
@@ -266,7 +283,7 @@ body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 
 /* === Chat Panel (右侧) === */
 #chat-panel{
-  width:380px;min-width:320px;max-width:460px;
+  width:var(--chat-width,380px);min-width:280px;max-width:600px;flex-shrink:0;
   height:100vh;display:flex;flex-direction:column;
   background:var(--panel);
   backdrop-filter:blur(32px) saturate(160%);
@@ -508,6 +525,8 @@ body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
   #app{flex-direction:column}
   #stage{height:45vh;flex:none}
   #stage::before,#stage::after{display:none}
+  #panel-splitter{display:none}
+  #chat-panel{width:100%!important;max-width:100%!important}
   .stage-topbar{padding:0 16px;top:12px}
   .stage-bottombar{bottom:12px;gap:6px}
   .vert-text{display:none}

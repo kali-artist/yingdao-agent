@@ -66,4 +66,68 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 自动聚焦输入框
   input.focus();
+
+  // === 可拖拽分隔条 ===
+  const splitter = document.getElementById('panel-splitter');
+  const chatPanel = document.getElementById('chat-panel');
+  const STORAGE_KEY = 'yingdao-chat-width';
+  const MIN_W = 280, MAX_W = 600;
+
+  // 读取上次保存的宽度
+  const savedW = parseFloat(localStorage.getItem(STORAGE_KEY));
+  if (savedW && savedW >= MIN_W && savedW <= MAX_W) {
+    document.documentElement.style.setProperty('--chat-width', savedW + 'px');
+  }
+
+  let dragging = false;
+
+  splitter.addEventListener('mousedown', (e) => {
+    dragging = true;
+    splitter.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const w = window.innerWidth - e.clientX;
+    const clamped = Math.max(MIN_W, Math.min(MAX_W, w));
+    document.documentElement.style.setProperty('--chat-width', clamped + 'px');
+    if (Live2DController.isLoaded) Live2DController.resize();
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    splitter.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    const cur = getComputedStyle(chatPanel).width;
+    localStorage.setItem(STORAGE_KEY, cur);
+  });
+
+  // 触屏支持
+  splitter.addEventListener('touchstart', (e) => {
+    dragging = true;
+    splitter.classList.add('dragging');
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('touchmove', (e) => {
+    if (!dragging) return;
+    const touch = e.touches[0];
+    const w = window.innerWidth - touch.clientX;
+    const clamped = Math.max(MIN_W, Math.min(MAX_W, w));
+    document.documentElement.style.setProperty('--chat-width', clamped + 'px');
+    if (Live2DController.isLoaded) Live2DController.resize();
+  }, { passive: true });
+
+  document.addEventListener('touchend', () => {
+    if (!dragging) return;
+    dragging = false;
+    splitter.classList.remove('dragging');
+    const cur = getComputedStyle(chatPanel).width;
+    localStorage.setItem(STORAGE_KEY, cur);
+  });
 });
