@@ -108,19 +108,21 @@ body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 
 /* === 可拖拽分隔条 === */
 #panel-splitter{
-  width:6px;flex-shrink:0;cursor:col-resize;position:relative;z-index:10;
-  background:transparent;transition:background .2s;
+  width:8px;flex-shrink:0;cursor:col-resize;position:relative;z-index:10;
+  background:linear-gradient(90deg,rgba(168,85,247,0.04),rgba(168,85,247,0.08),rgba(168,85,247,0.04));
+  transition:background .2s;
 }
 #panel-splitter:hover,#panel-splitter.dragging{
-  background:rgba(168,85,247,0.15);
+  background:linear-gradient(90deg,rgba(168,85,247,0.12),rgba(168,85,247,0.25),rgba(168,85,247,0.12));
 }
 .splitter-handle{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:2px;height:48px;border-radius:2px;
-  background:rgba(168,85,247,0.2);transition:background .2s,height .2s;
+  width:3px;height:60px;border-radius:3px;
+  background:rgba(168,85,247,0.35);transition:all .2s;
 }
 #panel-splitter:hover .splitter-handle,#panel-splitter.dragging .splitter-handle{
-  background:rgba(168,85,247,0.5);height:64px;
+  background:rgba(0,229,255,0.6);height:80px;width:4px;
+  box-shadow:0 0 12px rgba(0,229,255,0.4);
 }
 
 /* === Stage (左侧角色区) === */
