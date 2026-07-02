@@ -174,6 +174,17 @@ const ChatController = {
       if (!response.ok) throw new Error(`创建会话失败: ${response.status}`);
 
       const data = await response.json();
+
+      // 影刀错误响应: { code: 429, success: false, msg: "每日创建会话数已达上限：10" }
+      if (data.success === false || (data.code !== undefined && data.code !== 0)) {
+        const msg = data.msg || data.message || '未知错误';
+        const friendlyMap = {
+          429: '今日体验次数已用完，请明天再来～',
+        };
+        const friendly = friendlyMap[data.code] || msg;
+        throw new Error(friendly);
+      }
+
       // 影刀返回: { code: 0, data: { conversationUuid: "xxx" } }
       this.conversationUuid = data.data?.conversationUuid || data.conversationUuid;
 
