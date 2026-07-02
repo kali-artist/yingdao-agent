@@ -7,21 +7,21 @@
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 
 :root{
-  --bg-0:#07070a;
-  --bg-1:#0c0c10;
-  --bg-2:#131318;
-  --panel:rgba(10,10,14,0.78);
-  --panel-border:rgba(168,85,247,0.12);
+  --bg-0:#0a0a0f;
+  --bg-1:#101016;
+  --bg-2:#16161e;
+  --panel:rgba(14,14,20,0.82);
+  --panel-border:rgba(168,85,247,0.10);
   --accent:#a855f7;
   --accent-dim:#7c3aed;
-  --accent-glow:rgba(168,85,247,0.4);
+  --accent-glow:rgba(168,85,247,0.3);
   --cyan:#00e5ff;
-  --cyan-glow:rgba(0,229,255,0.3);
+  --cyan-glow:rgba(0,229,255,0.2);
   --warm:#f59e0b;
   --green:#4ade80;
-  --text:#f0f0f5;
-  --text-dim:#b0b0c0;
-  --text-muted:#606070;
+  --text:#e8e8f0;
+  --text-dim:#a8a8b8;
+  --text-muted:#585868;
   --danger:#ef4444;
   --radius:16px;
   --radius-sm:10px;
@@ -192,13 +192,13 @@ body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
   background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
   color:var(--text-dim);position:relative;overflow:hidden;
 }
-/* 流光扫过 */
+/* 静态柔光边框 */
 .pill::before{
-  content:'';position:absolute;top:0;left:-100%;width:50%;height:100%;
-  background:linear-gradient(90deg,transparent 0%,rgba(168,85,247,0.25) 20%,rgba(0,229,255,0.35) 50%,rgba(168,85,247,0.25) 80%,transparent 100%);
-  animation:pillSweep 3s linear infinite;
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(168,85,247,0.06) 0%,rgba(0,229,255,0.04) 50%,rgba(168,85,247,0.06) 100%);
+  border-radius:inherit;pointer-events:none;
 }
-@keyframes pillSweep{0%{left:-50%}100%{left:150%}}
+
 
 .pill-dot{
   width:6px;height:6px;border-radius:50%;
@@ -276,14 +276,12 @@ body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
   position:relative;
 }
 
-/* 聊天面板顶部流光线 */
+/* 聊天面板顶部柔光线 */
 #chat-panel::before{
   content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent 0%,var(--accent) 30%,var(--cyan) 50%,var(--accent) 70%,transparent 100%);
-  animation:topLineFlow 5s linear infinite;
-  opacity:0.6;
+  background:linear-gradient(90deg,transparent 0%,rgba(168,85,247,0.2) 30%,rgba(0,229,255,0.15) 50%,rgba(168,85,247,0.2) 70%,transparent 100%);
+  opacity:0.5;
 }
-@keyframes topLineFlow{0%{background-position:0% 0%}100%{background-position:200% 0%}}
 
 /* Chat Header */
 #chat-header{
@@ -413,11 +411,11 @@ body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 
 /* Input Area */
 #chat-input-area{padding:12px 20px 16px;border-top:1px solid rgba(168,85,247,0.04);position:relative}
-/* 输入区顶部流光 */
+/* 输入区顶部柔光线 */
 #chat-input-area::before{
   content:'';position:absolute;top:0;left:20px;right:20px;height:1px;
-  background:linear-gradient(90deg,transparent,var(--accent),var(--cyan),var(--accent),transparent);
-  opacity:0.15;animation:topLineFlow 6s linear infinite;
+  background:linear-gradient(90deg,transparent,rgba(168,85,247,0.12),rgba(0,229,255,0.08),rgba(168,85,247,0.12),transparent);
+  opacity:0.4;
 }
 .input-wrapper{display:flex;gap:8px;align-items:center}
 #file-btn{
