@@ -108,21 +108,41 @@ body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 
 /* === 可拖拽分隔条 === */
 #panel-splitter{
-  width:10px;flex-shrink:0;cursor:col-resize;position:relative;z-index:10;
-  background:linear-gradient(90deg,rgba(168,85,247,0.06),rgba(168,85,247,0.12),rgba(168,85,247,0.06));
-  transition:background .2s;
+  width:14px;flex-shrink:0;cursor:col-resize;position:relative;z-index:20;
+  background:linear-gradient(90deg,
+    rgba(168,85,247,0.15) 0%,
+    rgba(168,85,247,0.3) 45%,
+    rgba(0,229,255,0.3) 55%,
+    rgba(168,85,247,0.15) 100%);
+  transition:background .2s,box-shadow .2s;
+  box-shadow:0 0 0 1px rgba(168,85,247,0.15);
 }
 #panel-splitter:hover,#panel-splitter.dragging{
-  background:linear-gradient(90deg,rgba(168,85,247,0.15),rgba(0,229,255,0.2),rgba(168,85,247,0.15));
+  background:linear-gradient(90deg,
+    rgba(168,85,247,0.3) 0%,
+    rgba(0,229,255,0.4) 50%,
+    rgba(168,85,247,0.3) 100%);
+  box-shadow:0 0 16px rgba(0,229,255,0.3),0 0 0 1px rgba(0,229,255,0.3);
 }
 .splitter-handle{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:4px;height:60px;border-radius:3px;
-  background:rgba(168,85,247,0.4);transition:all .2s;
+  width:6px;height:48px;border-radius:4px;
+  background:linear-gradient(180deg,rgba(0,229,255,0.5),rgba(168,85,247,0.6));
+  transition:all .2s;
+  box-shadow:0 0 8px rgba(168,85,247,0.3);
 }
+/* 拖拽grip点 */
+.splitter-handle::before,.splitter-handle::after{
+  content:'';position:absolute;left:50%;transform:translateX(-50%);
+  width:3px;height:3px;border-radius:50%;
+  background:rgba(255,255,255,0.7);
+}
+.splitter-handle::before{top:8px}
+.splitter-handle::after{bottom:8px}
 #panel-splitter:hover .splitter-handle,#panel-splitter.dragging .splitter-handle{
-  background:rgba(0,229,255,0.7);height:80px;width:5px;
-  box-shadow:0 0 12px rgba(0,229,255,0.5);
+  background:linear-gradient(180deg,rgba(0,229,255,0.9),rgba(168,85,247,0.9));
+  height:64px;width:7px;
+  box-shadow:0 0 16px rgba(0,229,255,0.6);
 }
 
 /* === Stage (左侧角色区) === */
