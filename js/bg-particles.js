@@ -43,8 +43,8 @@
       y:Math.random()*H,
       vx:(Math.random()-0.5)*0.3,
       vy:(Math.random()-0.5)*0.3,
-      r:Math.random()*2+0.5,
-      alpha:Math.random()*0.5+0.15,
+      r:Math.random()*2.5+1,
+      alpha:Math.random()*0.4+0.4,
       hue:Math.random()>0.6?'cyan':'purple',
       pulse:Math.random()*Math.PI*2
     });
@@ -65,7 +65,7 @@
         const dx=p1.x-p2.x,dy=p1.y-p2.y;
         const dist=Math.sqrt(dx*dx+dy*dy);
         if(dist<120){
-          const opacity=0.08*(1-dist/120);
+          const opacity=0.15*(1-dist/120);
           // 混合颜色
           if(p1.hue==='cyan'||p2.hue==='cyan'){
             ctx.strokeStyle='rgba(0,229,255,'+opacity+')';
@@ -86,7 +86,7 @@
       const dx=p.x-mouseX,dy=p.y-mouseY;
       const dist=Math.sqrt(dx*dx+dy*dy);
       if(dist<180){
-        const opacity=0.2*(1-dist/180);
+        const opacity=0.35*(1-dist/180);
         ctx.strokeStyle='rgba(0,229,255,'+opacity+')';
         ctx.lineWidth=0.8;
         ctx.beginPath();
@@ -122,7 +122,7 @@
 
       // 发光粒子
       const color=p.hue==='cyan'?'0,229,255':'168,85,247';
-      const glowR=p.r*3;
+      const glowR=p.r*4;
 
       // 外发光
       const gradient=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,glowR);
@@ -148,15 +148,15 @@
     // 扫描线主体
     const scanGradient=ctx.createLinearGradient(0,scanY-30,0,scanY+30);
     scanGradient.addColorStop(0,'rgba(0,229,255,0)');
-    scanGradient.addColorStop(0.45,'rgba(0,229,255,0.02)');
-    scanGradient.addColorStop(0.5,'rgba(0,229,255,0.06)');
-    scanGradient.addColorStop(0.55,'rgba(0,229,255,0.02)');
+    scanGradient.addColorStop(0.45,'rgba(0,229,255,0.05)');
+    scanGradient.addColorStop(0.5,'rgba(0,229,255,0.12)');
+    scanGradient.addColorStop(0.55,'rgba(0,229,255,0.05)');
     scanGradient.addColorStop(1,'rgba(0,229,255,0)');
     ctx.fillStyle=scanGradient;
     ctx.fillRect(0,scanY-30,W,60);
 
     // 扫描线亮线
-    ctx.strokeStyle='rgba(0,229,255,0.08)';
+    ctx.strokeStyle='rgba(0,229,255,0.15)';
     ctx.lineWidth=1;
     ctx.beginPath();
     ctx.moveTo(0,scanY);
