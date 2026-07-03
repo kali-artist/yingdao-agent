@@ -215,7 +215,7 @@ const ChatController = {
     // 流保护：读取超时 + 文本空闲超时 + 总时长上限
     const READ_TIMEOUT = 60000;      // 单次读取最长等待60s
     const TEXT_IDLE_TIMEOUT = 30000;  // 收到文本后30s无新文本则结束
-    const MAX_STREAM_TIME = 120000;   // 流总时长上限120s
+    const MAX_STREAM_TIME = 180000;   // 流总时长上限180s（含工具执行时间）
     const streamStart = Date.now();
     let lastTextTime = 0;
     let hasReceivedText = false;
@@ -329,8 +329,8 @@ const ChatController = {
           lastTextTime = Date.now();
         }
 
-        // 检测AI消息完成事件 → 立即断开
-        if (innerType === 'message.sync.upsertMessage' && props.role === 'assistant' && props.success) {
+        // 检测AI消息完成事件 → 仅在已收到文本后断开（避免工具调用的upsertMessage提前断流）
+        if (innerType === 'message.sync.upsertMessage' && props.role === 'assistant' && props.success && hasReceivedText) {
           console.log('[Chat] AI消息完成(upsertMessage)，断开流');
           streamComplete = true;
           break;
