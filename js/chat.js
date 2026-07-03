@@ -208,10 +208,10 @@ const ChatController = {
     let buffer = '';
     let fullText = '';
     
-    // 按partID追踪part类型（reasoning/text/step-start等）
+    // 按partID追踪part类型和文本
     const partTypes = {};
-    // 标记是否已经有text part开始（用来跳过reasoning）
-    let firstTextStarted = false;
+    const partTexts = {};  // partId → 累积文本
+    const partOrder = [];  // 保持part出现顺序
     // 流保护：读取超时 + 文本空闲超时 + 总时长上限
     const READ_TIMEOUT = 300000;     // 单次读取最长等待300s
     const TEXT_IDLE_TIMEOUT = 120000;  // 收到文本后120s无新文本则结束
@@ -221,13 +221,25 @@ const ChatController = {
     let hasReceivedText = false;
     let streamComplete = false;
 
+    // 从所有text类型part重建完整文本
+    function rebuildFullText() {
+      const texts = [];
+      for (const pid of partOrder) {
+        // 包含text类型和未知类型（part.updated可能还没到，但delta已开始）
+        if ((partTypes[pid] === 'text' || !partTypes[pid]) && partTexts[pid]) {
+          texts.push(partTexts[pid]);
+        }
+      }
+      return texts.join('\n');
+    }
+
     while (true) {
       // 总时长超限
       if (Date.now() - streamStart > MAX_STREAM_TIME) {
         console.warn('[Chat] 流总时长超限(' + MAX_STREAM_TIME/1000 + 's)，强制结束');
         break;
       }
-      // 文本空闲超限：已收到文本但30s没有新文本
+      // 文本空闲超限：已收到文本但120s没有新文本
       if (hasReceivedText && Date.now() - lastTextTime > TEXT_IDLE_TIMEOUT) {
         console.warn('[Chat] 文本空闲超限(' + TEXT_IDLE_TIMEOUT/1000 + 's无新文本)，强制结束');
         break;
@@ -295,41 +307,55 @@ const ChatController = {
         const innerType = inner.type || '';
         const props = inner.properties || {};
 
-        // 记录part类型（message.part.updated 会在delta之前标记类型）
+        // 记录part类型
         if (innerType === 'message.part.updated') {
           const part = props.part || {};
           if (part.id && part.type) {
             partTypes[part.id] = part.type;
+            if (!partOrder.includes(part.id)) {
+              partOrder.push(part.id);
+            }
           }
-          // 如果是text类型的part最终更新，用完整文本做权威校正
+          // text part的最终更新：用完整文本做校正（只更新该part，不覆盖其他）
           if (part.type === 'text' && part.text) {
-            fullText = part.text;
+            partTexts[part.id] = part.text;
+            fullText = rebuildFullText();
             contentEl.innerHTML = this.formatText(fullText);
             UIController.scrollToBottom();
+            hasReceivedText = true;
+            lastTextTime = Date.now();
           }
-          // 检测非文本part类型（form/card/tool-call等）
+          // 检测非文本part类型
           if (part.type && !['text', 'reasoning', 'step-start', 'step-finish'].includes(part.type)) {
             console.log('[Chat] 非文本part类型:', part.type, JSON.stringify(part).substring(0, 200));
           }
         }
 
-        // 流式delta - 只提取text类型part的文本
+        // 流式delta - 按partID独立累积
         if (innerType === 'message.part.delta' && props.field === 'text' && props.delta) {
           const partId = props.partID;
           const partType = partTypes[partId];
 
-          // 跳过reasoning part的delta
+          // 只处理text类型和未知类型（part.updated可能还没到）的delta
           if (partType === 'reasoning') continue;
+          if (partType && partType !== 'text') continue;
 
-          // 未知类型或text类型 → 追加显示
-          fullText += props.delta;
+          // 追加到该part的文本
+          if (!partTexts[partId]) partTexts[partId] = '';
+          partTexts[partId] += props.delta;
+          if (!partOrder.includes(partId)) {
+            partOrder.push(partId);
+          }
+
+          // 重建完整文本并显示
+          fullText = rebuildFullText();
           contentEl.innerHTML = this.formatText(fullText);
           UIController.scrollToBottom();
           hasReceivedText = true;
           lastTextTime = Date.now();
         }
 
-        // 检测AI消息完成事件 → 仅在已收到文本后断开（避免工具调用的upsertMessage提前断流）
+        // 检测AI消息完成事件 → 仅在已收到文本后断开
         if (innerType === 'message.sync.upsertMessage' && props.role === 'assistant' && props.success && hasReceivedText) {
           console.log('[Chat] AI消息完成(upsertMessage)，断开流');
           streamComplete = true;
