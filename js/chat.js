@@ -212,11 +212,30 @@ const ChatController = {
     const partTypes = {};
     // 标记是否已经有text part开始（用来跳过reasoning）
     let firstTextStarted = false;
+    // 流空闲超时保护：60秒无数据则强制结束
+    const READ_TIMEOUT = 60000;
+    let streamComplete = false;
 
     while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+      // 用Promise.race实现读取超时，防止流卡死
+      let readResult;
+      try {
+        readResult = await Promise.race([
+          reader.read(),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('__READ_TIMEOUT__')), READ_TIMEOUT)
+          )
+        ]);
+      } catch (e) {
+        if (e.message === '__READ_TIMEOUT__') {
+          console.warn('[Chat] 流读取超时(' + READ_TIMEOUT/1000 + 's无数据)，强制结束');
+          break;
+        }
+        throw e;
+      }
 
+      const { done, value } = readResult;
+      if (done) break;
       buffer += decoder.decode(value, { stream: true });
 
       // SSE事件以双换行分隔
@@ -226,14 +245,24 @@ const ChatController = {
       for (const eventStr of events) {
         if (!eventStr.trim()) continue;
 
-        // 解析SSE事件
+        // 解析SSE事件 - 提取event类型和data
+        let sseEvent = '';
         let dataStr = '';
         for (const line of eventStr.split('\n')) {
-          if (line.startsWith('data:')) {
+          if (line.startsWith('event:')) {
+            sseEvent = line.slice(6).trim();
+          } else if (line.startsWith('data:')) {
             dataStr += line.slice(5).trim();
           }
         }
         if (!dataStr) continue;
+
+        // 检测流完成事件
+        if (sseEvent === 'xybot-stream-complete') {
+          streamComplete = true;
+          console.log('[Chat] 收到流完成事件');
+          continue;
+        }
 
         // 第一层JSON：外层SSE data
         let outer;
@@ -262,6 +291,10 @@ const ChatController = {
             contentEl.innerHTML = this.formatText(fullText);
             UIController.scrollToBottom();
           }
+          // 检测非文本part类型（form/card/tool-call等）
+          if (part.type && !['text', 'reasoning', 'step-start', 'step-finish'].includes(part.type)) {
+            console.log('[Chat] 非文本part类型:', part.type, part);
+          }
         }
 
         // 流式delta - 只提取text类型part的文本
@@ -276,6 +309,11 @@ const ChatController = {
           fullText += props.delta;
           contentEl.innerHTML = this.formatText(fullText);
           UIController.scrollToBottom();
+        }
+
+        // 检测同步完成事件
+        if (innerType === 'message.sync.upsertMessage' && props.role === 'assistant') {
+          console.log('[Chat] AI消息完成');
         }
       }
     }
@@ -303,6 +341,14 @@ const ChatController = {
         } catch {}
       }
     }
+
+    // 如果流结束但没有文本，显示提示
+    if (!fullText.trim()) {
+      fullText = '（AI返回了非文本内容，可能包含表单或卡片，当前版本暂不支持显示）';
+      contentEl.innerHTML = this.formatText(fullText);
+    }
+
+    console.log('[Chat] 流结束, streamComplete:', streamComplete, 'textLength:', fullText.length);
 
     return fullText.trim();
   },
