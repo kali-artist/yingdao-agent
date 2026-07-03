@@ -213,9 +213,9 @@ const ChatController = {
     // 标记是否已经有text part开始（用来跳过reasoning）
     let firstTextStarted = false;
     // 流保护：读取超时 + 文本空闲超时 + 总时长上限
-    const READ_TIMEOUT = 60000;      // 单次读取最长等待60s
-    const TEXT_IDLE_TIMEOUT = 30000;  // 收到文本后30s无新文本则结束
-    const MAX_STREAM_TIME = 180000;   // 流总时长上限180s（含工具执行时间）
+    const READ_TIMEOUT = 300000;     // 单次读取最长等待300s
+    const TEXT_IDLE_TIMEOUT = 120000;  // 收到文本后120s无新文本则结束
+    const MAX_STREAM_TIME = 600000;   // 流总时长上限600s（10分钟，含工具执行时间）
     const streamStart = Date.now();
     let lastTextTime = 0;
     let hasReceivedText = false;
