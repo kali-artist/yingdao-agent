@@ -212,11 +212,27 @@ const ChatController = {
     const partTypes = {};
     // 标记是否已经有text part开始（用来跳过reasoning）
     let firstTextStarted = false;
-    // 流空闲超时保护：60秒无数据则强制结束
-    const READ_TIMEOUT = 60000;
+    // 流保护：读取超时 + 文本空闲超时 + 总时长上限
+    const READ_TIMEOUT = 60000;      // 单次读取最长等待60s
+    const TEXT_IDLE_TIMEOUT = 30000;  // 收到文本后30s无新文本则结束
+    const MAX_STREAM_TIME = 120000;   // 流总时长上限120s
+    const streamStart = Date.now();
+    let lastTextTime = 0;
+    let hasReceivedText = false;
     let streamComplete = false;
 
     while (true) {
+      // 总时长超限
+      if (Date.now() - streamStart > MAX_STREAM_TIME) {
+        console.warn('[Chat] 流总时长超限(' + MAX_STREAM_TIME/1000 + 's)，强制结束');
+        break;
+      }
+      // 文本空闲超限：已收到文本但30s没有新文本
+      if (hasReceivedText && Date.now() - lastTextTime > TEXT_IDLE_TIMEOUT) {
+        console.warn('[Chat] 文本空闲超限(' + TEXT_IDLE_TIMEOUT/1000 + 's无新文本)，强制结束');
+        break;
+      }
+
       // 用Promise.race实现读取超时，防止流卡死
       let readResult;
       try {
@@ -257,11 +273,11 @@ const ChatController = {
         }
         if (!dataStr) continue;
 
-        // 检测流完成事件
+        // 检测流完成事件 → 立即断开
         if (sseEvent === 'xybot-stream-complete') {
           streamComplete = true;
-          console.log('[Chat] 收到流完成事件');
-          continue;
+          console.log('[Chat] 收到流完成事件，断开流');
+          break;
         }
 
         // 第一层JSON：外层SSE data
@@ -293,7 +309,7 @@ const ChatController = {
           }
           // 检测非文本part类型（form/card/tool-call等）
           if (part.type && !['text', 'reasoning', 'step-start', 'step-finish'].includes(part.type)) {
-            console.log('[Chat] 非文本part类型:', part.type, part);
+            console.log('[Chat] 非文本part类型:', part.type, JSON.stringify(part).substring(0, 200));
           }
         }
 
@@ -309,13 +325,20 @@ const ChatController = {
           fullText += props.delta;
           contentEl.innerHTML = this.formatText(fullText);
           UIController.scrollToBottom();
+          hasReceivedText = true;
+          lastTextTime = Date.now();
         }
 
-        // 检测同步完成事件
-        if (innerType === 'message.sync.upsertMessage' && props.role === 'assistant') {
-          console.log('[Chat] AI消息完成');
+        // 检测AI消息完成事件 → 立即断开
+        if (innerType === 'message.sync.upsertMessage' && props.role === 'assistant' && props.success) {
+          console.log('[Chat] AI消息完成(upsertMessage)，断开流');
+          streamComplete = true;
+          break;
         }
       }
+
+      // 内层break跳出（流完成或消息完成）
+      if (streamComplete) break;
     }
 
     // 处理buffer中剩余的完整事件
