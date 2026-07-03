@@ -133,7 +133,7 @@ const ChatController = {
       }
 
       // 处理流式响应
-      fullResponse = await this.handleStream(response.body, contentEl);
+      fullResponse = await this.handleStream(response.body, contentEl, msgEl);
 
       contentEl.classList.remove('stream-cursor');
       
@@ -202,7 +202,7 @@ const ChatController = {
   },
 
   // 处理SSE流 - 影刀双层JSON格式
-  async handleStream(body, contentEl) {
+  async handleStream(body, contentEl, msgEl) {
     const reader = body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
@@ -214,7 +214,7 @@ const ChatController = {
     const partOrder = [];  // 保持part出现顺序
     // 流保护：读取超时 + 文本空闲超时 + 总时长上限
     const READ_TIMEOUT = 300000;     // 单次读取最长等待300s
-    const TEXT_IDLE_TIMEOUT = 120000;  // 收到文本后120s无新文本则结束
+    const TEXT_IDLE_TIMEOUT = 180000;  // 收到文本后180s无新文本则结束（工具执行可能很久）
     const MAX_STREAM_TIME = 600000;   // 流总时长上限600s（10分钟，含工具执行时间）
     const streamStart = Date.now();
     let lastTextTime = 0;
@@ -325,9 +325,10 @@ const ChatController = {
             hasReceivedText = true;
             lastTextTime = Date.now();
           }
-          // 检测非文本part类型
+          // 检测非文本part类型 → 渲染表单/卡片等
           if (part.type && !['text', 'reasoning', 'step-start', 'step-finish'].includes(part.type)) {
-            console.log('[Chat] 非文本part类型:', part.type, JSON.stringify(part).substring(0, 200));
+            console.log('[Chat] 非文本part类型:', part.type, 'ID:', part.id, '数据:', JSON.stringify(part).substring(0, 1000));
+            this.renderSpecialPart(part, contentEl, msgEl);
           }
         }
 
@@ -355,11 +356,10 @@ const ChatController = {
           lastTextTime = Date.now();
         }
 
-        // 检测AI消息完成事件 → 仅在已收到文本后断开
+        // 检测AI消息完成事件 → 不再提前断开！等 xybot-stream-complete 或超时
+        // 旧逻辑在第一个text part完成就break，导致后续part（表单等）全丢
         if (innerType === 'message.sync.upsertMessage' && props.role === 'assistant' && props.success && hasReceivedText) {
-          console.log('[Chat] AI消息完成(upsertMessage)，断开流');
-          streamComplete = true;
-          break;
+          console.log('[Chat] 收到upsertMessage（不提前断开，等待stream-complete）');
         }
       }
 
@@ -446,6 +446,188 @@ const ChatController = {
     }
 
     return { text: cleanText, attachments };
+  },
+
+  // 渲染非文本part（表单/卡片/交互组件）
+  renderSpecialPart(part, contentEl, msgEl) {
+    // 避免重复渲染同一个part
+    if (part._rendered) return;
+    part._rendered = true;
+
+    const partType = part.type;
+    const partData = part.form || part.card || part.data || part.properties || part;
+    
+    console.log('[Chat] 尝试渲染特殊part:', partType, '数据键:', Object.keys(partData));
+
+    // 创建特殊内容容器
+    const specialEl = document.createElement('div');
+    specialEl.className = 'message-special';
+    specialEl.setAttribute('data-part-id', part.id || '');
+    specialEl.setAttribute('data-part-type', partType);
+
+    // 尝试提取表单数据（兼容多种可能的数据结构）
+    let formData = null;
+    if (part.form) formData = part.form;
+    else if (part.card && part.card.form) formData = part.card.form;
+    else if (part.data && part.data.form) formData = part.data.form;
+    else if (part.properties && part.properties.form) formData = part.properties.form;
+    else if (partType === 'form' || partType === 'card') formData = partData;
+
+    if (formData && (formData.questions || formData.fields || formData.items || Array.isArray(formData))) {
+      // 渲染表单
+      const questions = formData.questions || formData.fields || formData.items || (Array.isArray(formData) ? formData : []);
+      if (questions.length > 0) {
+        specialEl.innerHTML = this.renderForm(questions, part.id);
+        msgEl.appendChild(specialEl);
+        UIController.scrollToBottom();
+        return;
+      }
+    }
+
+    // 如果有options/choices字段，尝试渲染为选项列表
+    if (partData.options || partData.choices) {
+      const options = partData.options || partData.choices;
+      if (Array.isArray(options) && options.length > 0) {
+        specialEl.innerHTML = this.renderOptions(options, part.id, partData.title || partData.question || '');
+        msgEl.appendChild(specialEl);
+        UIController.scrollToBottom();
+        return;
+      }
+    }
+
+    // 兜底：显示原始数据摘要（可折叠）
+    const summary = JSON.stringify(part, null, 2).substring(0, 2000);
+    specialEl.innerHTML = `<details class="special-raw"><summary>📎 ${partType} (点击展开)</summary><pre>${this.escapeHtml(summary)}</pre></details>`;
+    msgEl.appendChild(specialEl);
+    UIController.scrollToBottom();
+  },
+
+  // 渲染表单
+  renderForm(questions, partId) {
+    let html = `<div class="chat-form" data-form-id="${partId || ''}">`;
+    
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      const qId = q.id || q.key || `q_${i}`;
+      const qTitle = q.title || q.label || q.question || q.name || `问题 ${i + 1}`;
+      const qType = q.type || q.inputType || 'single_choice';
+      const qOptions = q.options || q.choices || q.values || [];
+      const qRequired = q.required !== false;
+
+      html += `<div class="form-question">`;
+      html += `<div class="form-question-title">${this.escapeHtml(qTitle)}${qRequired ? ' <span class="required">*</span>' : ''}</div>`;
+      
+      if (qType === 'single_choice' || qType === 'radio' || qType === 'single') {
+        // 单选
+        for (const opt of qOptions) {
+          const optText = typeof opt === 'string' ? opt : (opt.text || opt.label || opt.value || JSON.stringify(opt));
+          const optVal = typeof opt === 'string' ? opt : (opt.value || optText);
+          html += `<label class="form-option" data-form-id="${partId}" data-q-id="${qId}">`;
+          html += `<input type="radio" name="form_${partId}_${qId}" value="${this.escapeHtml(optVal)}">`;
+          html += `<span>${this.escapeHtml(optText)}</span>`;
+          html += `</label>`;
+        }
+      } else if (qType === 'multiple_choice' || qType === 'checkbox' || qType === 'multi') {
+        // 多选
+        for (const opt of qOptions) {
+          const optText = typeof opt === 'string' ? opt : (opt.text || opt.label || opt.value || JSON.stringify(opt));
+          const optVal = typeof opt === 'string' ? opt : (opt.value || optText);
+          html += `<label class="form-option" data-form-id="${partId}" data-q-id="${qId}">`;
+          html += `<input type="checkbox" name="form_${partId}_${qId}" value="${this.escapeHtml(optVal)}">`;
+          html += `<span>${this.escapeHtml(optText)}</span>`;
+          html += `</label>`;
+        }
+      } else if (qType === 'text' || qType === 'input' || qType === 'textarea') {
+        // 文本输入
+        const placeholder = q.placeholder || '请输入...';
+        html += `<textarea class="form-textarea" data-form-id="${partId}" data-q-id="${qId}" placeholder="${this.escapeHtml(placeholder)}" rows="2"></textarea>`;
+      } else {
+        // 未知类型，兜底显示为文本输入
+        html += `<input type="text" class="form-input" data-form-id="${partId}" data-q-id="${qId}" placeholder="请输入...">`;
+      }
+      html += `</div>`;
+    }
+
+    html += `<button class="form-submit-btn" onclick="ChatController.submitForm('${partId}')">提交</button>`;
+    html += `</div>`;
+    return html;
+  },
+
+  // 渲染简单选项列表
+  renderOptions(options, partId, title) {
+    let html = `<div class="chat-options" data-options-id="${partId || ''}">`;
+    if (title) html += `<div class="form-question-title">${this.escapeHtml(title)}</div>`;
+    for (const opt of options) {
+      const optText = typeof opt === 'string' ? opt : (opt.text || opt.label || JSON.stringify(opt));
+      html += `<button class="option-btn" onclick="ChatController.selectOption('${partId}', '${this.escapeHtml(optText)}')">${this.escapeHtml(optText)}</button>`;
+    }
+    html += `</div>`;
+    return html;
+  },
+
+  // 提交表单
+  submitForm(partId) {
+    const formEl = document.querySelector(`.chat-form[data-form-id="${partId}"]`);
+    if (!formEl) return;
+
+    const results = {};
+    // 收集单选/多选
+    const questionGroups = {};
+    formEl.querySelectorAll('.form-option').forEach(label => {
+      const input = label.querySelector('input');
+      const qId = label.dataset.qId;
+      if (input.checked) {
+        if (input.type === 'checkbox') {
+          if (!questionGroups[qId]) questionGroups[qId] = [];
+          questionGroups[qId].push(input.value);
+        } else {
+          questionGroups[qId] = input.value;
+        }
+      }
+    });
+    // 收集文本输入
+    formEl.querySelectorAll('.form-textarea, .form-input').forEach(input => {
+      const qId = input.dataset.qId;
+      if (input.value.trim()) {
+        results[qId] = input.value.trim();
+      }
+    });
+    Object.assign(results, questionGroups);
+
+    // 构造提交文本
+    const parts = [];
+    for (const [key, val] of Object.entries(results)) {
+      if (Array.isArray(val)) {
+        parts.push(`${key}: ${val.join(', ')}`);
+      } else {
+        parts.push(`${key}: ${val}`);
+      }
+    }
+    const submitText = parts.join('\n');
+
+    // 禁用表单
+    formEl.querySelectorAll('input, textarea, button').forEach(el => el.disabled = true);
+    formEl.style.opacity = '0.6';
+
+    // 发送提交内容
+    this.sendMessage(submitText);
+  },
+
+  // 选择选项
+  selectOption(partId, option) {
+    const container = document.querySelector(`.chat-options[data-options-id="${partId}"]`);
+    if (container) {
+      container.querySelectorAll('button').forEach(b => b.disabled = true);
+      container.style.opacity = '0.6';
+    }
+    this.sendMessage(option);
+  },
+
+  // HTML转义
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
   },
 
   // 文本格式化

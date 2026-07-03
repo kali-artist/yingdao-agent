@@ -542,6 +542,32 @@ body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* === 表单/交互组件 === */
+.message-special{margin-top:12px;width:100%}
+.chat-form{background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.2);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.form-question{display:flex;flex-direction:column;gap:6px}
+.form-question-title{font-size:13px;font-weight:600;color:var(--text);opacity:0.95}
+.form-question-title .required{color:var(--accent-cyan)}
+.form-option{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;cursor:pointer;transition:background .15s;font-size:13px;color:var(--text);opacity:0.85}
+.form-option:hover{background:rgba(168,85,247,0.1);opacity:1}
+.form-option input{accent-color:var(--accent-purple);width:16px;height:16px;cursor:pointer}
+.form-option span{flex:1}
+.form-textarea{width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(168,85,247,0.15);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;font-family:inherit;resize:vertical;outline:none}
+.form-textarea:focus{border-color:var(--accent-purple);background:rgba(255,255,255,0.06)}
+.form-input{width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(168,85,247,0.15);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none}
+.form-input:focus{border-color:var(--accent-purple)}
+.form-submit-btn{align-self:flex-end;padding:6px 20px;border-radius:8px;background:linear-gradient(135deg,var(--accent-purple),var(--accent-cyan));color:#fff;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:transform .15s,opacity .15s}
+.form-submit-btn:hover{transform:scale(1.03)}
+.form-submit-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.chat-options{display:flex;flex-wrap:wrap;gap:8px;padding:8px 0}
+.option-btn{padding:6px 14px;border-radius:20px;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.2);color:var(--text);font-size:13px;cursor:pointer;transition:all .15s}
+.option-btn:hover{background:rgba(168,85,247,0.15);border-color:var(--accent-purple)}
+.option-btn:disabled{opacity:0.4;cursor:not-allowed}
+.special-raw{margin-top:8px;font-size:12px}
+.special-raw summary{cursor:pointer;color:var(--accent-cyan);opacity:0.7}
+.special-raw summary:hover{opacity:1}
+.special-raw pre{background:rgba(0,0,0,0.3);padding:8px;border-radius:6px;font-size:11px;overflow-x:auto;max-height:300px;color:var(--text);opacity:0.7}
+
 /* === 响应式 === */
 @media(max-width:768px){
   #app{flex-direction:column}
