@@ -175,8 +175,9 @@ const ChatController = {
 
       const data = await response.json();
 
+      // 影刀成功响应: { code: 200, success: true, data: {...} }
       // 影刀错误响应: { code: 429, success: false, msg: "每日创建会话数已达上限：10" }
-      if (data.success === false || (data.code !== undefined && data.code !== 0)) {
+      if (data.success === false || (data.code !== undefined && data.code !== 0 && data.code !== 200)) {
         const msg = data.msg || data.message || '未知错误';
         const friendlyMap = {
           429: '今日体验次数已用完，请明天再来～',
